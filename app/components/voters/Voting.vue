@@ -159,7 +159,7 @@ import NumberInput from '../NumberInput.vue'
 import BigNumber from 'bignumber.js'
 import VueQrcode from '@chenfengyuan/vue-qrcode'
 import store from 'store'
-
+import Transaction from 'ethereumjs-tx'
 export default {
     name: 'App',
     components: {
@@ -267,17 +267,26 @@ export default {
                     self.$router.push({ path: '/setting' })
                     throw Error('Web3 is not properly detected.')
                 }
-
                 self.loading = true
-
                 let account = await self.getAccount()
                 let contract = await self.TomoValidator.deployed()
-                let rs = await contract.vote(self.candidate, {
-                    from: account,
+                let txParams = {
+                    from: String(account),
                     value: new BigNumber(this.voteValue).multipliedBy(10 ** 18).toNumber(),
                     gasPrice: 2500,
                     gas: 1000000
-                })
+                }
+                if (self.NetworkProvider === 'ledger') {
+                    // check if network provider is hardware wallet
+                    // sign transaction using hardwarewallet before sending to chain
+                    let tx = (new Transaction(txParams)).serialize().toString('hex')
+                    let signedTx = await self.appEth.signTransaction(
+                        self.hdDerivationPath,
+                        tx
+                    )
+                    txParams = signedTx
+                }
+                let rs = await contract.vote(self.candidate, txParams)
 
                 let toastMessage = rs.tx ? 'You have successfully voted!'
                     : 'An error occurred while voting, please try again'
