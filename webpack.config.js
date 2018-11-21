@@ -94,7 +94,7 @@ module.exports = {
         noInfo: true,
         overlay: true,
         proxy: {
-            '/api/*': 'http://localhost:3001',
+            '/api/*': 'https://localhost:3001',
             secure: false
         }
     },
